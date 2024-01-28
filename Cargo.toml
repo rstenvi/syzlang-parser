@@ -2,9 +2,11 @@
 name = "syzlang-parser"
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
+license-file = "LICENSE"
 description = "Parse Syzlang language"
 readme = "README.md"
+homepage = "https://github.com/rstenvi/syzlang-parser"
+repository = "https://github.com/rstenvi/syzlang-parser"
 keywords = ["syzlang", "syzkaller", "syscall"]
 
 [[bin]]
