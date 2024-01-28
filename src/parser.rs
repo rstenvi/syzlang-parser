@@ -192,7 +192,7 @@ impl Value {
 					let twos = twos as i64;
 					-twos
 				};
-				println!("orig: {v:x} | twos {rval:x} {rval}");
+				trace!("orig: {v:x} | twos {rval:x} {rval}");
 				Ok(Self::Int(rval))
 			} else {
 				// This shouldn't be possible, I think
@@ -1981,7 +1981,11 @@ impl Argument {
 	pub fn fill_in_templates(args: &mut [Argument], templates: &[TypeRaw]) -> Result<usize> {
 		let mut ret = 0;
 		for arg in args.iter_mut() {
-			ret += arg.fill_in_template(templates)?;
+			if let Ok(add) = arg.fill_in_template(templates) {
+				ret += add;
+			} else {
+				error!("unable to fill in template on arg {arg:?}");
+			}
 		}
 		Ok(ret)
 	}
@@ -2966,6 +2970,9 @@ pub struct Parsed {
 
 	#[serde(skip)]
 	idtypes: HashMap<Identifier, IdentType>,
+
+	#[serde(skip)]
+	idbanned: Vec<Identifier>,
 }
 
 impl Parsed {
@@ -2981,6 +2988,7 @@ impl Parsed {
 		let flags = Vec::new();
 		let defines = Vec::new();
 		let idtypes = HashMap::new();
+		let idbanned = Vec::new();
 		let mut ret = Self {
 			consts,
 			includes,
@@ -2993,6 +3001,7 @@ impl Parsed {
 			flags,
 			defines,
 			idtypes,
+			idbanned,
 		};
 		ret.insert_stmts(stmts);
 		// ret.insert_builtin()?;
@@ -3122,6 +3131,8 @@ type buffer[DIR] ptr[DIR, array[int8]]
 
 # These are not documented, men seems to be standard
 type optional[ARG] ARG
+# TODO: openbsd also uses this with a single argument, B is presumably
+# then some default value
 type bytesize4[A,B] bytesize[A, B]
 type bytesize8[A,B] bytesize[A, B]
 "#;
@@ -3133,11 +3144,17 @@ type bytesize8[A,B] bytesize[A, B]
 		Ok(())
 	}
 	fn insert_idtype(&mut self, ident: &Identifier, it: IdentType) {
-		if let Some(old) = self.idtypes.insert(ident.clone(), it.clone()) {
-			if old != it {
-				// TODO: Might need to use a vector in hashmap
-				error!("equal ident for multiple different types {ident:?} {old:?} -> {it:?}");
+		if !self.idbanned.contains(ident) {
+			if let Some(old) = self.idtypes.insert(ident.clone(), it.clone()) {
+				if old != it {
+					// TODO: Might need to use a vector in hashmap
+					warn!("equal ident for multiple different types {ident:?} {old:?} -> {it:?}");
+					self.idtypes.remove(ident);
+					self.idbanned.push(ident.clone());
+				}
 			}
+		} else {
+			warn!("not inserting {ident:?} because it has caused problems");
 		}
 	}
 	fn insert_stmts(&mut self, stmts: Vec<Statement>) {
@@ -3285,7 +3302,9 @@ type bytesize8[A,B] bytesize[A, B]
 	/// The returning vector can be passed to [Statement::from_tokens] to get
 	/// one or more new statements.
 	pub fn unpack_template(tmpl: &TypeRaw, args: &Vec<Token>) -> Result<Vec<Token>> {
+		trace!("template token {tmpl:?} | {args:?}");
 		let args = Argument::split_tokens(args, &Token::Comma)?;
+		trace!("args: {args:?}");
 		verify!(args.len() == tmpl.replace.len(), UnexpectedLength);
 		let mut ret = Vec::with_capacity(tmpl.tokens.len());
 		for token in tmpl.tokens.iter() {

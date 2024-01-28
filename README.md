@@ -26,3 +26,12 @@ cargo build --release --features=cli
 
 There is also a [Makefile.toml](Makefile.toml) used by
 [cargo-make](https://github.com/sagiegurari/cargo-make) but that can be ignored.
+
+To test on a checkout of Syzkaller you can use:
+
+~~~
+cargo run --features=cli -- --os all --dir /path/to/syzkaller -a process
+~~~
+
+This will parse everything, but do not store the results, see help command for
+more info.
