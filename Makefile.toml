@@ -1,0 +1,42 @@
+[env]
+docargs = "doc|--quiet|--no-deps|--target=${@}"
+
+[tasks.fixfmt]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.clippy]
+install_crate = "clippy"
+command = "cargo"
+args = ["clippy", "--all-features"]
+
+[tasks.docpublic]
+command = "cargo"
+args = ["@@split(docargs,|)"]
+
+[tasks.docprivate]
+command = "cargo"
+args = ["@@split(docargs,|)", "--document-private-items"]
+
+[tasks.test]
+command = "cargo"
+args = ["test"]
+
+[tasks.build]
+description = "Build everything"
+category = "Build"
+command = "cargo"
+args = ["build"]
+
+[tasks.buildrelease]
+description = "Build everything in release mode"
+category = "Build"
+command = "cargo"
+args = ["build", "--release"]
+
+[tasks.clean]
+description = "Clean everything"
+category = "Clean"
+command = "cargo"
+args = ["clean"]
