@@ -125,9 +125,9 @@ impl FromStr for Os {
 	}
 }
 
-impl std::string::ToString for Os {
-	fn to_string(&self) -> String {
-		match self {
+impl std::fmt::Display for Os {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str(match self {
 			Os::Akaros => "akaros",
 			Os::Darwin => "darwin",
 			Os::Freebsd => "freebsd",
@@ -138,8 +138,7 @@ impl std::string::ToString for Os {
 			Os::Trusty => "trusty",
 			Os::Windows => "windows",
 			Os::All => "all",
-		}
-		.to_string()
+		})
 	}
 }
 
@@ -277,12 +276,13 @@ impl FromStr for Value {
 		}
 	}
 }
-impl ToString for &Value {
-	fn to_string(&self) -> String {
+
+impl std::fmt::Display for &Value {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Value::Int(_) => todo!(),
 			Value::String(_) => todo!(),
-			Value::Ident(n) => n.safe_name(),
+			Value::Ident(n) => f.write_str(&n.safe_name()),
 			Value::Unknown => todo!(),
 		}
 	}
@@ -712,11 +712,11 @@ impl ArgType {
 	}
 }
 
-impl ToString for ArgType {
-	fn to_string(&self) -> String {
+impl std::fmt::Display for ArgType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let v: String = serde_json::to_string(self).unwrap();
 		// Cut enclosing quotes
-		v[1..v.len() - 1].to_string()
+		f.write_str(&v[1..v.len() - 1])
 	}
 }
 
@@ -2107,11 +2107,12 @@ pub struct Identifier {
 	/// Subnames each separated by '$' in Syzlang
 	pub subname: Vec<String>,
 }
-impl ToString for &Identifier {
-	fn to_string(&self) -> String {
-		self.unique_name()
+impl std::fmt::Display for &Identifier {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str(&self.unique_name())
 	}
 }
+
 impl From<&str> for Identifier {
 	fn from(value: &str) -> Self {
 		Identifier::new(value, vec![])
@@ -2614,9 +2615,7 @@ impl Statement {
 			trace!("ARG: {parts:?}");
 			if parts.is_empty() {
 				continue;
-			} else if let Some(idx) = parts.iter().position(|x| {
-				matches!(*x, Token::Comment(_))
-			}) {
+			} else if let Some(idx) = parts.iter().position(|x| matches!(*x, Token::Comment(_))) {
 				// TODO: Should be a bit more clever here
 				assert!(idx == 0);
 				debug!("ignoring all because comment: {idx} {parts:?}");

@@ -6,10 +6,19 @@ install_crate = "rustfmt"
 command = "cargo"
 args = ["fmt", "--", "--emit=files"]
 
+[tasks.update]
+command = "cargo"
+args = ["update"]
+
 [tasks.clippy]
 install_crate = "clippy"
 command = "cargo"
-args = ["clippy", "--all-features"]
+args = ["clippy", "--no-deps", "--all-features"]
+
+[tasks.fixclippy]
+command = "cargo"
+install_crate = "clippy"
+args = ["clippy", "--no-deps", "--all-targets", "--all-features", "--fix"]
 
 [tasks.docpublic]
 command = "cargo"
@@ -40,3 +49,15 @@ description = "Clean everything"
 category = "Clean"
 command = "cargo"
 args = ["clean"]
+
+[tasks.releasecheck]
+dependencies = ["fixclippy", "fixfmt", "update"]
+
+[tasks.publish]
+dependencies = ["releasecheck"]
+command = "cargo"
+args = ["publish"]
+
+[tasks.publishdry]
+extend = "publish"
+args = ["publish", "--dry-run"]
