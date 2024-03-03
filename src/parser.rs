@@ -2390,9 +2390,9 @@ impl TypeRaw {
 /// Information about a resource
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Resource {
-	name: Identifier,
-	atype: ArgType,
-	consts: Vec<Value>,
+	pub name: Identifier,
+	pub atype: ArgType,
+	pub consts: Vec<Value>,
 }
 
 impl Resource {
