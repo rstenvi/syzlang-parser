@@ -63,15 +63,19 @@ pub enum Arch {
 impl Arch {
 	pub fn ptr_size(&self) -> usize {
 		match self {
-			Self::X86|Self::Aarch32 => 4,
-			Self::X86_64|Self::Aarch64|Self::Mips64le|Self::Ppc64le|Self::Riscv64 => 8,
+			Self::X86 | Self::Aarch32 => 4,
+			Self::X86_64 | Self::Aarch64 | Self::Mips64le | Self::Ppc64le | Self::Riscv64 => 8,
 			Self::Native => {
 				#[cfg(target_pointer_width = "32")]
-				{ 4 }
+				{
+					4
+				}
 
 				#[cfg(target_pointer_width = "64")]
-				{ 8 }
-			},
+				{
+					8
+				}
+			}
 			_ => todo!(),
 		}
 	}
@@ -536,7 +540,7 @@ impl Consts {
 		let ret = self
 			.consts
 			.iter()
-			.filter(|x| { x.name == name1 || x.name == name2 })
+			.filter(|x| x.name == name1 || x.name == name2)
 			.cloned()
 			.collect::<Vec<_>>();
 		ret
@@ -549,7 +553,9 @@ impl Consts {
 			.filter(|x| {
 				if let Ok(v) = x.as_uint() {
 					v == value
-				} else { false }
+				} else {
+					false
+				}
 			})
 			.cloned()
 			.collect::<Vec<_>>()
@@ -1644,11 +1650,15 @@ impl Argument {
 					ArgType::Intptr.evaluate_size(arch)
 				} else {
 					for opt in self.opts.iter() {
-						if let ArgOpt::FullArg(a) = opt{
+						if let ArgOpt::FullArg(a) = opt {
 							return a.evaluate_size(arch);
 						}
 					}
-					log::warn!("unable to evaluate size of {:?} {:?}", self.name, self.argtype);
+					log::warn!(
+						"unable to evaluate size of {:?} {:?}",
+						self.name,
+						self.argtype
+					);
 					Err(e)
 				}
 			}
@@ -1656,7 +1666,7 @@ impl Argument {
 	}
 	pub fn resolve_to_basic(&self) -> &ArgType {
 		for opt in self.opts.iter() {
-			if let ArgOpt::FullArg(a) = opt{
+			if let ArgOpt::FullArg(a) = opt {
 				return a.resolve_to_basic();
 			}
 		}
