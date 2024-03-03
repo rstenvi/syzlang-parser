@@ -26,13 +26,13 @@ glob = "0.3.1"
 # For CLI app
 anyhow = { version = "1", optional = true }
 clap = { version = "4.3.1", features = ["derive"], optional = true }
-pretty_env_logger = { version = "0.4", optional = true }
+pretty_env_logger = { version = "0.5", optional = true }
 clap-verbosity-flag = { version = "2", optional = true }
 
 [dev-dependencies]
 # Used to register logging at setup when running tests
-ctor = "0.1.26"
-env_logger = "0.10.0"
+ctor = "0.2"
+env_logger = "0.11"
 
 [features]
 std = []
