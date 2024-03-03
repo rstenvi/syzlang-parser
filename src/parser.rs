@@ -61,6 +61,20 @@ pub enum Arch {
 	Native,
 }
 impl Arch {
+	pub fn ptr_size(&self) -> usize {
+		match self {
+			Self::X86|Self::Aarch32 => 4,
+			Self::X86_64|Self::Aarch64|Self::Mips64le|Self::Ppc64le|Self::Riscv64 => 8,
+			Self::Native => {
+				#[cfg(target_pointer_width = "32")]
+				{ 4 }
+
+				#[cfg(target_pointer_width = "64")]
+				{ 8 }
+			},
+			_ => todo!(),
+		}
+	}
 	pub fn all() -> Vec<Self> {
 		vec![
 			Arch::X86,
@@ -516,6 +530,30 @@ impl Consts {
 			None
 		}
 	}
+	pub fn find_sysno_for_any(&self, name: &str) -> Vec<Const> {
+		let name1 = format!("__NR_{name}");
+		let name2 = format!("SYS_{name}");
+		let ret = self
+			.consts
+			.iter()
+			.filter(|x| { x.name == name1 || x.name == name2 })
+			.cloned()
+			.collect::<Vec<_>>();
+		ret
+	}
+	pub fn all_consts_matching(&self, value: u64, arch: &Arch) -> Vec<Const> {
+		log::debug!("all consts matching {value:x} for {arch:?}");
+		self.consts
+			.iter()
+			.filter(|x| x.arch.contains(arch))
+			.filter(|x| {
+				if let Ok(v) = x.as_uint() {
+					v == value
+				} else { false }
+			})
+			.cloned()
+			.collect::<Vec<_>>()
+	}
 
 	/// Iterate over all the consts
 	pub fn consts(&self) -> std::slice::Iter<Const> {
@@ -697,6 +735,45 @@ pub enum ArgType {
 }
 
 impl ArgType {
+	pub fn evaluate_size(&self, arch: &Arch) -> Result<usize> {
+		let ret = match self {
+			ArgType::Intptr => Ok(arch.ptr_size()),
+			ArgType::Int8 => Ok(1),
+			ArgType::Int16 => Ok(2),
+			ArgType::Int32 => Ok(4),
+			ArgType::Int64 => Ok(8),
+			ArgType::Bool => Ok(1),
+			ArgType::Csum => Err(Error::Unsupported),
+			ArgType::Int16be => Ok(2),
+			ArgType::Int32be => Ok(4),
+			ArgType::Int64be => Ok(8),
+			ArgType::String => Err(Error::Unsupported),
+			ArgType::StringNoz => Err(Error::Unsupported),
+			ArgType::StringConst => Err(Error::Unsupported),
+			ArgType::Len => Err(Error::Unsupported),
+			ArgType::Proc => Err(Error::Unsupported),
+			ArgType::Glob => Err(Error::Unsupported),
+			ArgType::Bitsize => Err(Error::Unsupported),
+			ArgType::Bytesize => Err(Error::Unsupported),
+			ArgType::Vma => Ok(arch.ptr_size()),
+			ArgType::Vma64 => Ok(8),
+			ArgType::OffsetOf => Err(Error::Unsupported),
+			ArgType::Fmt => Err(Error::Unsupported),
+			ArgType::Ptr => Ok(arch.ptr_size()),
+			ArgType::Ptr64 => Ok(8),
+			ArgType::Flags => Err(Error::Unsupported),
+			ArgType::Const => Err(Error::Unsupported),
+			ArgType::Text => Err(Error::Unsupported),
+			ArgType::Void => Err(Error::Unsupported),
+			ArgType::Array => Err(Error::Unsupported),
+			ArgType::CompressedImage => Err(Error::Unsupported),
+			ArgType::Ident(_) => Err(Error::Unsupported),
+			ArgType::Template(_) => Err(Error::Unsupported),
+		};
+		log::debug!("eval size of {self:?} = {ret:?}");
+		ret
+	}
+
 	pub fn refers_c_string(&self) -> bool {
 		match self {
 			Self::Ident(n) => n.name == "filename",
@@ -768,15 +845,16 @@ impl ArgType {
 		matches!(self, ArgType::Array)
 	}
 	pub fn bytes_as_int(&self, bytes: &[u8]) -> Result<serde_json::Number> {
+		log::debug!("bytes {bytes:?} into {self:?}");
 		let v = match self {
-			ArgType::Intptr => isize::from_ne_bytes(bytes.try_into().expect("")).into(),
-			ArgType::Int64 => i64::from_ne_bytes(bytes.try_into().expect("")).into(),
-			ArgType::Int32 => i32::from_ne_bytes(bytes.try_into().expect("")).into(),
-			ArgType::Int16 => i16::from_ne_bytes(bytes.try_into().expect("")).into(),
-			ArgType::Int8 => i8::from_ne_bytes(bytes.try_into().expect("")).into(),
-			ArgType::Int64be => i64::from_be_bytes(bytes.try_into().expect("")).into(),
-			ArgType::Int32be => i32::from_be_bytes(bytes.try_into().expect("")).into(),
-			ArgType::Int16be => i16::from_be_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Intptr => usize::from_ne_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Int64 => u64::from_ne_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Int32 => u32::from_ne_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Int16 => u16::from_ne_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Int8 => u8::from_ne_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Int64be => u64::from_be_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Int32be => u32::from_be_bytes(bytes.try_into().expect("")).into(),
+			ArgType::Int16be => u16::from_be_bytes(bytes.try_into().expect("")).into(),
 			_ => return Err(Error::Unsupported),
 		};
 		Ok(v)
@@ -1558,6 +1636,32 @@ impl Argument {
 			sourceidents: Vec::new(),
 		}
 	}
+	pub fn evaluate_size(&self, arch: &Arch) -> Result<usize> {
+		match self.argtype.evaluate_size(arch) {
+			Ok(n) => Ok(n),
+			Err(e) => {
+				if self.argtype.is_ptr() {
+					ArgType::Intptr.evaluate_size(arch)
+				} else {
+					for opt in self.opts.iter() {
+						if let ArgOpt::FullArg(a) = opt{
+							return a.evaluate_size(arch);
+						}
+					}
+					log::warn!("unable to evaluate size of {:?} {:?}", self.name, self.argtype);
+					Err(e)
+				}
+			}
+		}
+	}
+	pub fn resolve_to_basic(&self) -> &ArgType {
+		for opt in self.opts.iter() {
+			if let ArgOpt::FullArg(a) = opt{
+				return a.resolve_to_basic();
+			}
+		}
+		&self.argtype
+	}
 	pub fn is_ident(&self) -> bool {
 		matches!(self.argtype, ArgType::Ident(_))
 	}
@@ -2053,6 +2157,15 @@ impl Struct {
 	// pub(crate) fn into_inner(self) -> (Identifier, Vec<Argument>, Vec<ArgOpt>) {
 	//     (self.name, self.args, self.opts)
 	// }
+	pub fn evaluate_size(&self, arch: &Arch) -> Result<usize> {
+		let mut size = 0;
+		for arg in self.args.iter() {
+			let n = arg.evaluate_size(arch)?;
+			log::debug!("size of {:?} = {n}", arg.name);
+			size += n;
+		}
+		Ok(size)
+	}
 }
 
 impl Postproc for Struct {
