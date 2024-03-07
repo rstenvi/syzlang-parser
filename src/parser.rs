@@ -58,12 +58,13 @@ pub enum Arch {
 	Ppc64le,
 	Riscv64,
 	S390x,
+	Mips32,
 	Native,
 }
 impl Arch {
 	pub fn ptr_size(&self) -> usize {
 		match self {
-			Self::X86 | Self::Aarch32 => 4,
+			Self::X86 | Self::Aarch32 | Self::Mips32 => 4,
 			Self::X86_64 | Self::Aarch64 | Self::Mips64le | Self::Ppc64le | Self::Riscv64 => 8,
 			Self::Native => {
 				#[cfg(target_pointer_width = "32")]
@@ -89,6 +90,7 @@ impl Arch {
 			Arch::Ppc64le,
 			Arch::Riscv64,
 			Arch::S390x,
+			Arch::Mips32,
 		]
 	}
 }
@@ -173,6 +175,7 @@ impl FromStr for Arch {
 			"ppc64le" | "ppc64" => Ok(Arch::Ppc64le),
 			"riscv64" => Ok(Arch::Riscv64),
 			"s390x" => Ok(Arch::S390x),
+			"mips32"|"mips"|"mips32be" => Ok(Arch::Mips32),
 			"target" => Ok(Arch::Native),
 			_ => Err(Error::InvalidString(s.to_string())),
 		}
@@ -3508,7 +3511,7 @@ fake(fd fd)
 
 		assert_eq!(ArgType::Intptr.to_string(), "intptr");
 
-		assert_eq!(Arch::all().len(), 8);
+		assert_eq!(Arch::all().len(), 9);
 		assert_eq!(Os::all().len(), 9);
 		assert_eq!(Os::Akaros.to_string(), "akaros");
 		assert_eq!(Os::Trusty, Os::from_str("trusty").unwrap());
