@@ -175,7 +175,7 @@ impl FromStr for Arch {
 			"ppc64le" | "ppc64" => Ok(Arch::Ppc64le),
 			"riscv64" => Ok(Arch::Riscv64),
 			"s390x" => Ok(Arch::S390x),
-			"mips32"|"mips"|"mips32be" => Ok(Arch::Mips32),
+			"mips32" | "mips" | "mips32be" => Ok(Arch::Mips32),
 			"target" => Ok(Arch::Native),
 			_ => Err(Error::InvalidString(s.to_string())),
 		}
