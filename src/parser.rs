@@ -410,7 +410,7 @@ impl Const {
 				let mut ret = Vec::new();
 
 				debug!("tokens bef {rem:?}");
-				let _ = rem.extract_if(|x| *x == Token::Comma).collect::<Vec<_>>();
+				rem.retain(|x| *x != Token::Comma);
 				debug!("tokens aft {rem:?}");
 				while !rem.is_empty() {
 					let r = consume!(rem);
@@ -465,7 +465,7 @@ impl Const {
 								}
 								let n = arch.to_name()?;
 								let narch = Arch::from_str(n)?;
-								let _ = arches.extract_if(|x| *x == narch).collect::<Vec<_>>();
+								arches.retain(|x| *x != narch);
 								narches.push(narch);
 							}
 							if nvalue != Value::Unknown {
@@ -669,10 +669,7 @@ impl Consts {
 	///
 	/// Not necessary, but can be used to save memory.
 	pub fn filter_arch(&mut self, arch: &Arch) {
-		let _ = self
-			.consts
-			.extract_if(|x| !x.arch.contains(arch))
-			.collect::<Vec<_>>();
+		self.consts.retain(|x| x.arch.contains(arch));
 	}
 }
 
@@ -1148,7 +1145,7 @@ impl ArgOpt {
 	}
 	fn remove_tokens(opts: &mut Vec<Self>) -> Vec<Vec<Token>> {
 		let rem: Vec<Vec<Token>> = opts
-			.extract_if(|x| matches!(x, ArgOpt::Tokens(_)))
+			.extract_if(.., |x| matches!(x, ArgOpt::Tokens(_)))
 			.map(|x| {
 				if let ArgOpt::Tokens(n) = x {
 					n
@@ -3203,21 +3200,21 @@ impl Parsed {
 	pub fn remove_virtual_functions(&mut self) {
 		let q = self
 			.functions
-			.extract_if(|x| x.is_virtual())
+			.extract_if(.., |x| x.is_virtual())
 			.collect::<Vec<_>>();
 		debug!("rem(virt): {}", q.len());
 	}
 	pub fn remove_func_no_sysno(&mut self, arch: &Arch) {
 		let q = self
 			.functions
-			.extract_if(|x| self.consts.find_sysno(&x.name.name, arch).is_none())
+			.extract_if(.., |x| self.consts.find_sysno(&x.name.name, arch).is_none())
 			.collect::<Vec<_>>();
 		debug!("rem(sysno): {}", q.len());
 	}
 	pub fn remove_subfunctions(&mut self) {
 		let q = self
 			.functions
-			.extract_if(|x| !x.name.subname.is_empty())
+			.extract_if(.., |x| !x.name.subname.is_empty())
 			.collect::<Vec<_>>();
 		debug!("rem(sub): {}", q.len());
 	}

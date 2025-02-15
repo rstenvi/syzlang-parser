@@ -7,7 +7,6 @@
 //! 2. Parse into [parser::Parsed]
 //!
 
-#![feature(extract_if)]
 #![feature(test)]
 
 pub mod parser;
