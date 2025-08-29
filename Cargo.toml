@@ -31,7 +31,7 @@ clap-verbosity-flag = { version = "2", optional = true }
 
 [dev-dependencies]
 # Used to register logging at setup when running tests
-ctor = "0.2"
+ctor = "0.5"
 env_logger = "0.11"
 
 [features]
