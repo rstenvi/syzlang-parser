@@ -188,9 +188,12 @@ impl Token {
 		c.is_ascii_lowercase()
 			|| c.is_ascii_uppercase()
 			|| c.is_ascii_digit()
-			|| c == '_' || c == '/'
-			|| c == '.' || c == '?'
-			|| c == '-' || c == '\''
+			|| c == '_'
+			|| c == '/'
+			|| c == '.'
+			|| c == '?'
+			|| c == '-'
+			|| c == '\''
 	}
 	fn post_proc(mut tokens: Vec<Token>) -> Vec<Token> {
 		let mut ret = Vec::with_capacity(tokens.len());

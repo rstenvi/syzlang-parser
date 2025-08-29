@@ -565,7 +565,7 @@ impl Consts {
 	}
 
 	/// Iterate over all the consts
-	pub fn consts(&self) -> std::slice::Iter<Const> {
+	pub fn consts(&'_ self) -> std::slice::Iter<'_, Const> {
 		self.consts.iter()
 	}
 
@@ -593,7 +593,7 @@ impl Consts {
 					None
 				} else if let Ok(arch) = Arch::from_str(n) {
 					Some(arch)
-				} else if let Some(last) = n.split('_').last() {
+				} else if let Some(last) = n.split('_').next_back() {
 					let arch = Arch::from_str(last)?;
 					debug!("using arch {arch:?}");
 					Some(arch)
