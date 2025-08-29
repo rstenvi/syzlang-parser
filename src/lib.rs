@@ -7,8 +7,6 @@
 //! 2. Parse into [parser::Parsed]
 //!
 
-#![feature(test)]
-
 pub mod parser;
 pub mod token;
 

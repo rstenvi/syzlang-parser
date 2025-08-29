@@ -3445,8 +3445,7 @@ type bytesize8[A,B] bytesize[A, B]
 		Ok(ret)
 	}
 
-	#[cfg(test)]
-	fn assemble(stmts: &str, consts: &str, arch: Option<Arch>) -> Result<Parsed> {
+	pub fn assemble(stmts: &str, consts: &str, arch: Option<Arch>) -> Result<Parsed> {
 		let consts = Self::get_consts(consts, arch)?;
 		trace!("consts {consts:?}");
 		let stmts = Self::get_stmts(stmts)?;
@@ -3457,7 +3456,6 @@ type bytesize8[A,B] bytesize[A, B]
 		parsed.postprocess()?;
 		Ok(parsed)
 	}
-	#[cfg(test)]
 	fn get_consts(s: &str, arch: Option<Arch>) -> Result<Vec<Const>> {
 		let tokens = Token::create_from_str(s)?;
 		trace!("tokens {tokens:?}");
@@ -3465,7 +3463,6 @@ type bytesize8[A,B] bytesize[A, B]
 		trace!("consts {consts:?}");
 		Ok(consts)
 	}
-	#[cfg(test)]
 	fn get_stmts(s: &str) -> Result<Vec<Statement>> {
 		let tokens = Token::create_from_str(s)?;
 		let stmts = Statement::from_tokens(tokens)?;
@@ -3477,27 +3474,6 @@ type bytesize8[A,B] bytesize[A, B]
 mod tests {
 	use super::*;
 	use std::path::PathBuf;
-	use test::Bencher;
-	extern crate test;
-
-	#[bench]
-	fn bench_load_text(b: &mut Bencher) {
-		let s1 = r#"
-arches = amd64
-__NR_fake = 1
-		"#;
-		let s2 = r#"
-resource fd[int32]: 1
-resource fd[int32]: 0x1000
-type abc1 const[0xffff]
-type abc2 const[0xffffffff]
-type abc3 const[0x0fffffffffffffff]
-syz_some(a const[0x1])
-syz_some(b const[-1])
-fake(fd fd)
-		"#;
-		b.iter(|| Parsed::assemble(s2, s1, None).unwrap());
-	}
 
 	#[test]
 	fn parse_types() {

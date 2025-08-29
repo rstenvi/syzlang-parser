@@ -345,31 +345,6 @@ impl Token {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use test::Bencher;
-	extern crate test;
-
-	#[bench]
-	fn bench_token1(b: &mut Bencher) {
-		let s = r#"abcd = "hello", `world`, "!", "Hello World!""#;
-		b.iter(|| Token::create_from_str(s).unwrap())
-	}
-
-	#[bench]
-	fn bench_token0(b: &mut Bencher) {
-		let s = r#"resource fd[int32]"#;
-		b.iter(|| Token::create_from_str(s).unwrap())
-	}
-
-	#[bench]
-	fn bench_token2(b: &mut Bencher) {
-		let s = r#"
-		# Some comment
-		
-		func$abcd(type int32, meta int64) fd
-		
-"#;
-		b.iter(|| Token::create_from_str(s).unwrap())
-	}
 
 	#[test]
 	fn tokens0() {
